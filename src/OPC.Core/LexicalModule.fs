@@ -4,34 +4,12 @@ open System
 open System.Text
 open System.Collections.Generic
 
+open OPC.Core.Types
+
 module LexicalModule =
-
-    type LastAction = 
-        | Added
-        | Again
-        | None
-
-    type Operators =
-        | Arimetic of string
-        | Logic of string
-        | Relational of string
-        | Asignation of string
-        | CheckAgain
-        | None
-
-    type Tokens = 
-        | Keyword of string
-        | Operator of Operators
-        | Identifier of string
-        | Punctuation of string
-        | Constant of string
-        | None
-        
-    let keyworkds = [ "si"; "principal"; "entero"; "real"; "logico"; "mientras"; "regresa"; "verdadero"; "falso" ]
-
     let isPunctuation str = 
         match str with
-        | "(" | ")" | " " | "\n" | "{" | "}" | "," | ";" -> Tokens.Punctuation(str)
+        | "(" | ")" | " " | "\n" | "{" | "}" | "," | ";" | "\t" | "\r" -> Tokens.Punctuation(str)
         | _ -> Tokens.None
         
     let isOperator str checkEquals =
@@ -49,12 +27,14 @@ module LexicalModule =
         | Operators.None -> Tokens.None
         | _ -> Tokens.Operator(operator)
 
-    let isKeyword str =
-        let exits = List.exists ((=) str) keyworkds
-        if(exits) then
-            Tokens.Keyword(str)
-        else
-            Tokens.None
+    let isKeyword str = 
+        match str with 
+        | "mientras" | "regresa" | "si" | "principal" -> Tokens.Keyword(str, DataTypes.None)
+        | "verdadero" | "falso" -> Tokens.Keyword(str, DataTypes.LogicConstant)
+        | "logico"  -> Tokens.Keyword(str, DataTypes.Logic)
+        | "entero" -> Tokens.Keyword(str, DataTypes.Integer)
+        | "real" -> Tokens.Keyword(str, DataTypes.Real)
+        | _ -> Tokens.None
 
     let addAndReset(buffer:StringBuilder, tokenList:List<Tokens>, token:Tokens) = 
         buffer.Clear() |> ignore
@@ -85,6 +65,43 @@ module LexicalModule =
         | Tokens.None -> LastAction.None
         | _ -> LastAction.None
 
+    let isIdentifier(line:string) = 
+        let firstChar = line.[0]
+        if Char.IsNumber(firstChar) 
+        then Tokens.Error(line, 0, 0)
+        else if Char.IsSymbol(firstChar) 
+        then Tokens.Error(line, 0, 0)
+        else Tokens.Identifier(line)
+
+    let checkIdentier(buffer:StringBuilder, tokenList:List<Tokens>, str:string) =
+        let isId = isIdentifier str
+        match isId with
+        | Tokens.Identifier _ -> addAndReset(buffer, tokenList, isId)
+        | _ -> LastAction.None
+
+    let isNumber(line:string) = 
+        let mutable result = Numbers.Integer(line)
+        for ch in line do
+            let isNumber = Char.IsNumber(ch)
+            if not isNumber then
+                if ch.Equals('.') then
+                    match result with
+                    | Numbers.Real _ -> result <- Numbers.Error(line)
+                    | _ -> result <- Numbers.Real(line)
+                else result <- Numbers.Error(line)
+
+        match result with 
+        | Numbers.None -> Tokens.None
+        | Numbers.Error _ -> Tokens.None
+        | _ -> Tokens.Constant(result)
+
+    let checkNumber(buffer:StringBuilder, tokenList:List<Tokens>, str:String) =
+        let number = isNumber(str)
+        match number with
+        | Tokens.Constant num -> addAndReset(buffer, tokenList, number)
+        | Tokens.None -> LastAction.None
+        | _ -> LastAction.None
+
     let checkFullOperator(buffer:StringBuilder, tokenList:List<Tokens>, i:byref<int>, text:ReadOnlySpan<char>) =
         let shouldCheck = false
         let operator = checkOperator(buffer, tokenList, buffer.ToString(), shouldCheck)
@@ -99,38 +116,110 @@ module LexicalModule =
         else
             operator
 
-    let getFullStr(buffer:StringBuilder, i:byref<int>, text:ReadOnlySpan<char>) = 
+    let getFullStr(buffer:StringBuilder, i:byref<int>, text:ReadOnlySpan<char>, charPtr:byref<int>) = 
         let mutable punctuation = isPunctuation(text.[i].ToString())
         buffer.Clear() |> ignore
         while ((punctuation = Tokens.None) && (i < text.Length - 1)) do
             buffer.Append(text.[i]) |> ignore
             i <- i + 1
+            charPtr <- charPtr + 1
             punctuation <- isPunctuation(text.[i].ToString())
 
         buffer.ToString()
 
+    let buildError(buffer:StringBuilder, tokenList:List<Tokens>, str:string, line:int, char:int) =
+        let error = Tokens.Error(str, line, char)
+        addAndReset(buffer, tokenList, error)
 
     let processSpan(text:ReadOnlySpan<char>, buffer:StringBuilder, tokenList:List<Tokens>) =
         let mutable i = 0
+        let mutable currentLinePtr = 1
+        let mutable currentCharPtr = 1
         while i < text.Length - 1 do
             buffer.Append(text.[i]) |> ignore
             let punctuation = checkPunctuation(buffer, tokenList, buffer.ToString())
             if(punctuation <> LastAction.Added) then
                 let result = checkFullOperator(buffer, tokenList, &i, text)
                 if(result <> LastAction.Added) then
-                    let id = getFullStr(buffer, &i, text)
+                    let id = getFullStr(buffer, &i, text, &currentCharPtr)
                     let keyword = checkKeyword(buffer, tokenList, id)
-                    if(keyword = LastAction.Added) then i <- i + 1
+                    if(keyword <> LastAction.Added) then
+                        let isNum = checkNumber(buffer, tokenList, id)
+                        if(isNum <> LastAction.Added) then
+                            let isId = checkIdentier(buffer, tokenList, id)
+                            if isId = LastAction.None then
+                                buildError(buffer, tokenList, id, currentLinePtr, currentCharPtr) 
+                                |> ignore
                 else 
                     i <- i + 1
+                    currentCharPtr <- currentCharPtr + 1
             else
-                i <- i + 1
-        tokenList
+                let currentChar = text.[i]
+                if currentChar.Equals('\n') then
+                    currentLinePtr <- currentLinePtr + 1
+                    currentCharPtr <- 1
+                else 
+                    currentCharPtr <- currentCharPtr + 1
 
-        
+                i <- i + 1
+
+    let filterTokens(token:Tokens)  =
+        match token with
+        | Tokens.Keyword (_, dt) -> 
+            match dt with
+            |DataTypes.Integer -> true
+            |DataTypes.Logic -> true
+            |DataTypes.Real -> true
+            | _ -> false
+        | Tokens.Identifier _ -> true
+        | _ -> false
+
+    let filterKeywords(token:Tokens)  = 
+        match token with 
+        | Tokens.Keyword _ -> true
+        | _ -> false
+
+    let filterIdentifiers(token:Tokens) =
+        match token with
+        | Tokens.Identifier _ -> true
+        | _ -> false
+
+    type Symbol = { Type:DataTypes; Id:Tokens } 
+
+    let extractIdentifiers(tokens:List<Tokens>) =
+        let identifiers = List<Symbol>()
+        let mutable i = 0
+        while i < tokens.Count - 4 do
+            let tuple = (tokens.[i], tokens.[i + 1], tokens.[i + 2], tokens.[i + 3], tokens.[i + 4])
+            match tuple with
+            | (Tokens.Keyword (_, dt), _, id, Tokens.Punctuation(punct), _) -> 
+                match (dt, id, punct) with
+                | (DataTypes.None, _, _) -> ()
+                | (DataTypes.LogicConstant, _, _) -> ()
+                | (_, _, _) when punct.Equals(";") -> identifiers.Add({Type = dt; Id = id})
+                | (_, _, _) -> ()
+            | _ -> ()
+
+            i <- i + 1
+        identifiers
+
+    let buildTable(tokens:List<Tokens>) =
+        extractIdentifiers tokens
+
+
+    let printErrors(tokens:List<Tokens>) = 
+        for token in tokens do
+            match token with
+            | Tokens.Error (id, line, _) -> printfn "Error at line %i, id %A" line id
+            | _ -> ()
+    
     let getTokens(text:ReadOnlySpan<char>) =
         let buffer = StringBuilder()
         let tokenList = List<Tokens>()
         processSpan(text, buffer, tokenList)
+
+        printErrors tokenList
+
+        (tokenList, tokenList |> buildTable).ToValueTuple()
 
 
