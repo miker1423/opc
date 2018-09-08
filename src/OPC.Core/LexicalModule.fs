@@ -5,7 +5,6 @@ open System.Text
 open System.Collections.Generic
 
 module LexicalModule =
-    open System
 
     type LastAction = 
         | Added
@@ -86,41 +85,52 @@ module LexicalModule =
         | Tokens.None -> LastAction.None
         | _ -> LastAction.None
 
-    let processSpan(text:Span<char>, buffer:StringBuilder, tokenList:List<Tokens>) =
+    let checkFullOperator(buffer:StringBuilder, tokenList:List<Tokens>, i:byref<int>, text:ReadOnlySpan<char>) =
         let shouldCheck = false
+        let operator = checkOperator(buffer, tokenList, buffer.ToString(), shouldCheck)
+        if(operator = LastAction.Again) then
+            let shouldAppend = isPunctuation(text.[i+1].ToString())
+            if(shouldAppend = Tokens.None) then
+                buffer.Append(text.[i+1]) |> ignore
+                i <- i + 1
+                checkOperator(buffer, tokenList, buffer.ToString(), not shouldCheck)
+            else 
+                checkOperator(buffer, tokenList, buffer.ToString(), not shouldCheck)
+        else
+            operator
+
+    let getFullStr(buffer:StringBuilder, i:byref<int>, text:ReadOnlySpan<char>) = 
+        let mutable punctuation = isPunctuation(text.[i].ToString())
+        buffer.Clear() |> ignore
+        while ((punctuation = Tokens.None) && (i < text.Length - 1)) do
+            buffer.Append(text.[i]) |> ignore
+            i <- i + 1
+            punctuation <- isPunctuation(text.[i].ToString())
+
+        buffer.ToString()
+
+
+    let processSpan(text:ReadOnlySpan<char>, buffer:StringBuilder, tokenList:List<Tokens>) =
         let mutable i = 0
         while i < text.Length - 1 do
             buffer.Append(text.[i]) |> ignore
             let punctuation = checkPunctuation(buffer, tokenList, buffer.ToString())
             if(punctuation <> LastAction.Added) then
-                let mutable operator = checkOperator(buffer, tokenList, buffer.ToString(), shouldCheck)
-                if(operator = LastAction.Again) then
-                    let shouldAppend = isPunctuation(text.[i+1].ToString())
-                    if(shouldAppend = Tokens.None) then
-                        buffer.Append(text.[i+1]) |> ignore
-                        i <- i + 1
-                        operator <- checkOperator(buffer, tokenList, buffer.ToString(), not shouldCheck)
-                    else
-                        operator <- checkOperator(buffer, tokenList, buffer.ToString(), not shouldCheck)
-                else if(operator = LastAction.None) then
-                    let keyword = checkKeyword(buffer, tokenList, buffer.ToString())
-                        
-
-
-                    
-
-
+                let result = checkFullOperator(buffer, tokenList, &i, text)
+                if(result <> LastAction.Added) then
+                    let id = getFullStr(buffer, &i, text)
+                    let keyword = checkKeyword(buffer, tokenList, id)
+                    if(keyword = LastAction.Added) then i <- i + 1
+                else 
+                    i <- i + 1
+            else
+                i <- i + 1
+        tokenList
 
         
-    let getTokens(text:Span<char>) =
+    let getTokens(text:ReadOnlySpan<char>) =
         let buffer = StringBuilder()
         let tokenList = List<Tokens>()
-        let shouldCheck = false
-        for i in  0 .. text.Length - 1 do
-            let str = text.[i].ToString()
-            let notDone = checkPunctuation(buffer, tokenList, str)
-            match notDone with
-            | _ -> ()
-        ()
+        processSpan(text, buffer, tokenList)
 
 

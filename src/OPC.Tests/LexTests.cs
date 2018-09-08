@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Text;
+using System.Collections.Generic;
 using Xunit;
 
 using OPC.Core;
@@ -63,7 +65,7 @@ namespace OPC.Tests
         {
             var result = LexicalModule.isOperator("=", false);
 
-            Assert.True(result.IsNone);
+            Assert.True(result.IsOperator);
         }
 
         [Fact]
@@ -72,6 +74,35 @@ namespace OPC.Tests
             var result = LexicalModule.isOperator("==", true);
 
             Assert.True(result.IsOperator);
+        }
+
+        [Fact]
+        public void TestFullString()
+        {
+            var buffer = new StringBuilder();
+            var tokens = new List<LexicalModule.Tokens>();
+            var str = "principal ".AsSpan();
+            tokens = LexicalModule.processSpan(str, buffer, tokens);
+
+            Assert.True(tokens.Count != 0);
+        }
+
+        [Fact]
+        public void TestTripleEquals()
+        {
+            var str = "=== ".AsSpan();
+            var tokens = LexicalModule.getTokens(str);
+
+            Assert.True(tokens.Count == 2);
+        }
+
+        [Fact]
+        public void TestFiveEquals()
+        {
+            var str = "===== ".AsSpan();
+            var tokens = LexicalModule.getTokens(str);
+
+            Assert.True(tokens.Count == 3);
         }
     }
 }
