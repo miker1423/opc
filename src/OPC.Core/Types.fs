@@ -35,4 +35,5 @@ module Types =
         | Constant of Numbers
         | Error of string * int * int
         | None
-
+        
+    type Symbol = { Type:DataTypes; Id:Tokens } 

@@ -183,9 +183,7 @@ module LexicalModule =
         match token with
         | Tokens.Identifier _ -> true
         | _ -> false
-
-    type Symbol = { Type:DataTypes; Id:Tokens } 
-
+        
     let extractIdentifiers(tokens:List<Tokens>) =
         let identifiers = List<Symbol>()
         let mutable i = 0
