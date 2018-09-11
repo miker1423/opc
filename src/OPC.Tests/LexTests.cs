@@ -150,7 +150,7 @@ namespace OPC.Tests
         public void TestFullLine()
         {
             var str = "entero a;".AsSpan();
-            var (tokens, symbols) = getTokens(str);
+            var tokens = getTokens(str);
 
             Assert.True(tokens.Count == 3);
         }
@@ -159,7 +159,7 @@ namespace OPC.Tests
         public void TestTripleEquals()
         {
             var str = "=== ".AsSpan();
-            var (tokens, symbols) = getTokens(str);
+            var tokens = getTokens(str);
 
             Assert.True(tokens.Count == 2);
         }
@@ -168,7 +168,7 @@ namespace OPC.Tests
         public void TestFiveEquals()
         {
             var str = "===== ".AsSpan();
-            var (tokens, symbols) = getTokens(str);
+            var tokens = getTokens(str);
 
             Assert.True(tokens.Count == 3);
         }

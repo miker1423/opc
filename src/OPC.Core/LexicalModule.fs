@@ -2,6 +2,7 @@ namespace OPC.Core
 
 open System
 open System.Text
+open System.Linq
 open System.Collections.Generic
 
 open OPC.Core.Types
@@ -204,13 +205,26 @@ module LexicalModule =
     let buildTable(tokens:List<Tokens>) =
         extractIdentifiers tokens
 
-
     let printErrors(tokens:List<Tokens>) = 
         for token in tokens do
             match token with
             | Tokens.Error (id, line, _) -> printfn "Error at line %i, id %A" line id
             | _ -> ()
-    
+
+
+    let whiteSpace = [ " "; "\n"; "\t" ]
+    let isWhiteSpace(token:Tokens) =
+        match token with 
+        | Tokens.Punctuation str -> whiteSpace.Contains(str)
+        | _ -> false
+
+    let removeWhiteTokens(tokens:List<Tokens>) = 
+        let newList = new List<Tokens>()
+        for token in tokens do
+            let isWhite = isWhiteSpace(token)
+            if not isWhite then newList.Add(token)
+        newList
+        
     let getTokens(text:ReadOnlySpan<char>) =
         let buffer = StringBuilder()
         let tokenList = List<Tokens>()
@@ -218,6 +232,4 @@ module LexicalModule =
 
         printErrors tokenList
 
-        (tokenList, tokenList |> buildTable).ToValueTuple()
-
-
+        removeWhiteTokens tokenList

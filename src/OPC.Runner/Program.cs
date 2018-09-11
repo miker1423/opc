@@ -15,18 +15,12 @@ namespace OPC.Runner
             var file = await File.ReadAllTextAsync(@".\Archivo_Fuente.txt");
             var newText = RemoveRChar(file);
 
-            var (tokens, symbols) = getTokens(newText);
+            var tokens = getTokens(newText);
 
             Console.WriteLine("TOKENS");
             foreach (var token in tokens)
             {
                 Console.WriteLine(token);
-            }
-
-            Console.WriteLine("\nTABLE");
-            foreach (var symbol in symbols)
-            {
-                Console.WriteLine($"{symbol.Type} - {symbol.Id}");
             }
 
             Console.ReadLine();

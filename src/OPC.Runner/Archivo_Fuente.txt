@@ -1,9 +1,6 @@
 entero func1(logico l1, real r1) {
 	real e1;
-	integer 1i;
 	logico e2;
-	
-	1i = 279.123.12
 
 	a = ((e1 + e2) - e3) / func1() ^ 3;
 	b = 4 > 4;	
