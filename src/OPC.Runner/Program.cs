@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using System.Text;
+using System.Linq;
 using Microsoft.FSharp.Collections;
 
 using static OPC.Core.LexicalModule;
@@ -19,22 +20,20 @@ namespace OPC.Runner
 
             var tokens = getTokens(newText);
 
-            Console.WriteLine("Symbols");
-            foreach (var symbol in tokens.Item2)
-            {
-                Console.WriteLine(symbol);
-            }
-
             var list = ListModule.OfSeq(tokens.Item1);
 
-            var syntaxResult = SyntaxAnalyze(list);
-
-            Console.WriteLine(syntaxResult);
-
+            var syntaxResult = SyntaxAnalyze(tokens.Item1, tokens.Item2.ToList());
+            
             Console.WriteLine("TOKENS");
             foreach (var token in tokens.Item1)
             {
                 Console.WriteLine(token);
+            }
+
+            Console.WriteLine("SYMBOLS");
+            foreach (var symbol in syntaxResult.Item2)
+            {
+                Console.WriteLine(symbol);
             }
 
             Console.ReadLine();

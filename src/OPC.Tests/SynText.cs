@@ -179,7 +179,7 @@ namespace OPC.Tests
 
             var fList = ListModule.OfSeq(tokens.Item1);
 
-            var isValid = IsFunction(fList);
+            var isValid = IsFunction(fList, DataTypes.None);
             Assert.True(isValid);
         }
 
@@ -251,7 +251,7 @@ namespace OPC.Tests
 
             var fList = ListModule.OfSeq(tokens.Item1);
 
-            var isValid = IsFunction(fList);
+            var isValid = IsFunction(fList, DataTypes.None);
             Assert.True(isValid);
         }
 
@@ -263,20 +263,26 @@ namespace OPC.Tests
 
             var fList = ListModule.OfSeq(tokens.Item1);
 
-            var isValid = IsFunction(fList);
+            var isValid = IsFunction(fList, DataTypes.None);
             Assert.True(isValid);
         }
 
         [Fact]
-        public void WhanComplexInvalid_ShouldReturnTrue()
+        public void WhenComplexInvalid_ShouldReturnTrue()
         {
             var main = "entero f() { mientras(a) { si(b) { } } ";
             var tokens = getTokens(main);
 
             var fList = ListModule.OfSeq(tokens.Item1);
 
-            var isValid = IsFunction(fList);
+            var isValid = IsFunction(fList, DataTypes.None);
             Assert.False(isValid);
+        }
+
+        [Fact]
+        public void WhenValidFunctionWithTokens_ShouldReturnTrue()
+        {
+
         }
     }
 }
