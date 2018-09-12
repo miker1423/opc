@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Text;
+using Microsoft.FSharp.Collections;
 
 using static OPC.Core.LexicalModule;
+using static OPC.Core.SyntaxModule;
+using static OPC.Core.Types;
 
 namespace OPC.Runner
 {
@@ -17,8 +19,14 @@ namespace OPC.Runner
 
             var tokens = getTokens(newText);
 
+            var list = ListModule.OfSeq(tokens.Item1);
+
+            var syntaxResult = SyntaxAnalyze(list);
+
+            Console.WriteLine(syntaxResult);
+
             Console.WriteLine("TOKENS");
-            foreach (var token in tokens)
+            foreach (var token in tokens.Item1)
             {
                 Console.WriteLine(token);
             }

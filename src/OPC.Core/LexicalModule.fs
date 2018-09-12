@@ -30,8 +30,9 @@ module LexicalModule =
 
     let isKeyword str = 
         match str with 
-        | "mientras" | "regresa" | "si" | "principal" -> Tokens.Keyword(str, DataTypes.None)
+        | "mientras" | "regresa" | "si"  -> Tokens.Keyword(str, DataTypes.None)
         | "verdadero" | "falso" -> Tokens.Keyword(str, DataTypes.LogicConstant)
+        | "principal" -> Tokens.Keyword(str, DataTypes.Main)
         | "logico"  -> Tokens.Keyword(str, DataTypes.Logic)
         | "entero" -> Tokens.Keyword(str, DataTypes.Integer)
         | "real" -> Tokens.Keyword(str, DataTypes.Real)
@@ -99,7 +100,7 @@ module LexicalModule =
     let checkNumber(buffer:StringBuilder, tokenList:List<Tokens>, str:String) =
         let number = isNumber(str)
         match number with
-        | Tokens.Constant num -> addAndReset(buffer, tokenList, number)
+        | Tokens.Constant _ -> addAndReset(buffer, tokenList, number)
         | Tokens.None -> LastAction.None
         | _ -> LastAction.None
 
@@ -163,47 +164,14 @@ module LexicalModule =
                     currentCharPtr <- currentCharPtr + 1
 
                 i <- i + 1
-
-    let filterTokens(token:Tokens)  =
-        match token with
-        | Tokens.Keyword (_, dt) -> 
-            match dt with
-            |DataTypes.Integer -> true
-            |DataTypes.Logic -> true
-            |DataTypes.Real -> true
-            | _ -> false
-        | Tokens.Identifier _ -> true
-        | _ -> false
-
-    let filterKeywords(token:Tokens)  = 
+                
+    let matchIdentifiers(token:Tokens) =
         match token with 
-        | Tokens.Keyword _ -> true
-        | _ -> false
-
-    let filterIdentifiers(token:Tokens) =
-        match token with
         | Tokens.Identifier _ -> true
-        | _ -> false
-        
+        | _ -> false;
+
     let extractIdentifiers(tokens:List<Tokens>) =
-        let identifiers = List<Symbol>()
-        let mutable i = 0
-        while i < tokens.Count - 4 do
-            let tuple = (tokens.[i], tokens.[i + 1], tokens.[i + 2], tokens.[i + 3], tokens.[i + 4])
-            match tuple with
-            | (Tokens.Keyword (_, dt), _, id, Tokens.Punctuation(punct), _) -> 
-                match (dt, id, punct) with
-                | (DataTypes.None, _, _) -> ()
-                | (DataTypes.LogicConstant, _, _) -> ()
-                | (_, _, _) when punct.Equals(";") -> identifiers.Add({Type = dt; Id = id})
-                | (_, _, _) -> ()
-            | _ -> ()
-
-            i <- i + 1
-        identifiers
-
-    let buildTable(tokens:List<Tokens>) =
-        extractIdentifiers tokens
+        tokens |> Seq.filter matchIdentifiers
 
     let printErrors(tokens:List<Tokens>) = 
         for token in tokens do
@@ -232,4 +200,4 @@ module LexicalModule =
 
         printErrors tokenList
 
-        removeWhiteTokens tokenList
+        (tokenList |> removeWhiteTokens, tokenList |> extractIdentifiers)

@@ -24,6 +24,7 @@ module Types =
         | Integer
         | Real
         | Logic
+        | Main
         | LogicConstant
         | None
 
@@ -36,8 +37,9 @@ module Types =
         | Error of string * int * int
         | None
     
-    type IdType = 
-        | Function of Tokens list
+    type IdTypes = 
+        | Function
         | Variable
-
-    type Symbol = { Type:DataTypes; Id:Tokens } 
+        | None
+        
+    type Symbol = { Type:DataTypes; Token:Tokens; IdType:IdTypes } 
