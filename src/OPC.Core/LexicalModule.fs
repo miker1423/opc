@@ -68,13 +68,13 @@ module LexicalModule =
         | Tokens.None -> LastAction.None
         | _ -> LastAction.None
 
-    let isIdentifier(line:string, lineInt, char) = 
-        let firstChar = line.[0]
-        if Char.IsNumber(firstChar) 
-        then Tokens.Error(line, 0, 0)
-        else if Char.IsSymbol(firstChar) 
-        then Tokens.Error(line, 0, 0)
-        else Tokens.Identifier(line, lineInt, char - line.Length - 1)
+    let isIdentifier(line:string, lineInt, char) =
+        if Char.IsNumber(line.[0]) || Char.IsSymbol(line.[0]) then Tokens.Error(line, 0, 0)
+        else 
+            let count = line |> Seq.filter(fun x -> Char.IsSymbol(x))
+            if count.Count() = 0 then
+                Tokens.Identifier(line, lineInt, char - line.Length - 1)
+            else Tokens.Error(line, 0, 0)
 
     let checkIdentier(buffer:StringBuilder, tokenList:List<Tokens>, str:string, line, char) =
         let isId = isIdentifier(str, line, char)
