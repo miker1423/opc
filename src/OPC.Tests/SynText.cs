@@ -182,5 +182,101 @@ namespace OPC.Tests
             var isValid = IsFunction(fList);
             Assert.True(isValid);
         }
+
+        [Fact]
+        public void WhenValidIf_ShouldReturnTrue()
+        {
+            var function = "si(a) { } ";
+            var tokens = getTokens(function);
+
+            var fList = ListModule.OfSeq(tokens.Item1);
+
+            var isValid = IsIf(fList);
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void WhenValidWhile_ShouldReturnTrue()
+        {
+            var function = "mientras(a) { } ";
+            var tokens = getTokens(function);
+
+            var fList = ListModule.OfSeq(tokens.Item1);
+
+            var isValid = IsWhile(fList);
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void WhenValidIfWhile_ShouldReturnTrue()
+        {
+            var function = "si(a) { mientras(b) { } } ";
+            var tokens = getTokens(function);
+
+            var fList = ListModule.OfSeq(tokens.Item1);
+
+            var isValid = IsBlock(fList);
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void WhanMain_ShouldReturnTrue()
+        {
+            var main = "principal() { } ";
+            var tokens = getTokens(main);
+
+            var fList = ListModule.OfSeq(tokens.Item1);
+
+            var isValid = IsMain(fList);
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void WhanMainAndFunction_ShouldReturnTrue()
+        {
+            var main = "principal() { } entero f() { } ";
+            var tokens = getTokens(main);
+
+            var fList = ListModule.OfSeq(tokens.Item1);
+
+            var isValid = IsMain(fList);
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void WhanFunctionAndMain_ShouldReturnTrue()
+        {
+            var main = "entero f() { } principal() { }  ";
+            var tokens = getTokens(main);
+
+            var fList = ListModule.OfSeq(tokens.Item1);
+
+            var isValid = IsFunction(fList);
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void WhanComplexValid_ShouldReturnTrue()
+        {
+            var main = "entero f() { mientras(a) { } si(b) { } } ";
+            var tokens = getTokens(main);
+
+            var fList = ListModule.OfSeq(tokens.Item1);
+
+            var isValid = IsFunction(fList);
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void WhanComplexInvalid_ShouldReturnTrue()
+        {
+            var main = "entero f() { mientras(a) { si(b) { } } ";
+            var tokens = getTokens(main);
+
+            var fList = ListModule.OfSeq(tokens.Item1);
+
+            var isValid = IsFunction(fList);
+            Assert.False(isValid);
+        }
     }
 }

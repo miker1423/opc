@@ -8,12 +8,12 @@ open System.Collections.Generic
 open OPC.Core.Types
 
 module LexicalModule =
-    let isPunctuation str = 
+    let isPunctuation str line char = 
         match str with
-        | "(" | ")" | " " | "\n" | "{" | "}" | "," | ";" | "\t" | "\r" -> Tokens.Punctuation(str)
+        | "(" | ")" | " " | "\n" | "{" | "}" | "," | ";" | "\t" | "\r" -> Tokens.Punctuation(str, line, char - 1)
         | _ -> Tokens.None
         
-    let isOperator str checkEquals =
+    let isOperator str checkEquals line char =
         let operator = 
             match str with
             | "+" | "-" | "*" | "/" | "^" -> Operators.Arimetic(str)
@@ -26,17 +26,17 @@ module LexicalModule =
 
         match operator with
         | Operators.None -> Tokens.None
-        | _ -> Tokens.Operator(operator)
+        | _ -> Tokens.Operator(operator, line, char)
 
-    let isKeyword str = 
+    let isKeyword str line char = 
         match str with 
-        | "mientras"  | "si"  -> Tokens.Keyword(str, DataTypes.None)
-        | "verdadero" | "falso" -> Tokens.Keyword(str, DataTypes.LogicConstant)
-        | "principal" -> Tokens.Keyword(str, DataTypes.Main)
-        | "regresa" -> Tokens.Keyword(str, DataTypes.Return)
-        | "logico"  -> Tokens.Keyword(str, DataTypes.Logic)
-        | "entero" -> Tokens.Keyword(str, DataTypes.Integer)
-        | "real" -> Tokens.Keyword(str, DataTypes.Real)
+        | "mientras"  | "si"  -> Tokens.Keyword(str, DataTypes.None, line, char - 1)
+        | "verdadero" | "falso" -> Tokens.Keyword(str, DataTypes.LogicConstant, line, char - 1)
+        | "principal" -> Tokens.Keyword(str, DataTypes.Main, line, char - 1)
+        | "regresa" -> Tokens.Keyword(str, DataTypes.Return, line, char - 1)
+        | "logico"  -> Tokens.Keyword(str, DataTypes.Logic, line, char - 1)
+        | "entero" -> Tokens.Keyword(str, DataTypes.Integer, line, char - 1)
+        | "real" -> Tokens.Keyword(str, DataTypes.Real, line, char - 1)
         | _ -> Tokens.None
 
     let addAndReset(buffer:StringBuilder, tokenList:List<Tokens>, token:Tokens) = 
@@ -44,45 +44,45 @@ module LexicalModule =
         tokenList.Add(token)
         LastAction.Added
 
-    let checkKeyword(buffer:StringBuilder, tokenList:List<Tokens>, str:string) =
-        let keyword = isKeyword str
+    let checkKeyword(buffer:StringBuilder, tokenList:List<Tokens>, str:string, line, char) =
+        let keyword = isKeyword str line char
         match keyword with
-        | Tokens.Keyword _ -> addAndReset(buffer, tokenList, keyword) 
+        | Tokens.Keyword _-> addAndReset(buffer, tokenList, keyword) 
         | Tokens.None -> LastAction.None
         | _ -> LastAction.None
 
-    let checkOperator(buffer:StringBuilder, tokenList:List<Tokens>, str:string, checkAgain:bool) =
-        let operator = isOperator str checkAgain
+    let checkOperator(buffer:StringBuilder, tokenList:List<Tokens>, str:string, checkAgain:bool, line, char) =
+        let operator = isOperator str checkAgain line char
         match operator with 
-        | Tokens.Operator op ->
+        | Tokens.Operator (op, _, _) ->
             match op with
             | Operators.CheckAgain -> LastAction.Again
             | _ -> addAndReset(buffer, tokenList, operator)
         | Tokens.None -> LastAction.None
         | _ -> LastAction.None
         
-    let checkPunctuation(buffer:StringBuilder, tokenList:List<Tokens>, str) =
-        let puntuation = isPunctuation str
+    let checkPunctuation(buffer:StringBuilder, tokenList:List<Tokens>, str, line, char) =
+        let puntuation = isPunctuation str line char
         match puntuation with
         | Tokens.Punctuation _ -> addAndReset(buffer, tokenList, puntuation)
         | Tokens.None -> LastAction.None
         | _ -> LastAction.None
 
-    let isIdentifier(line:string) = 
+    let isIdentifier(line:string, lineInt, char) = 
         let firstChar = line.[0]
         if Char.IsNumber(firstChar) 
         then Tokens.Error(line, 0, 0)
         else if Char.IsSymbol(firstChar) 
         then Tokens.Error(line, 0, 0)
-        else Tokens.Identifier(line)
+        else Tokens.Identifier(line, lineInt, char - line.Length - 1)
 
-    let checkIdentier(buffer:StringBuilder, tokenList:List<Tokens>, str:string) =
-        let isId = isIdentifier str
+    let checkIdentier(buffer:StringBuilder, tokenList:List<Tokens>, str:string, line, char) =
+        let isId = isIdentifier(str, line, char)
         match isId with
         | Tokens.Identifier _ -> addAndReset(buffer, tokenList, isId)
         | _ -> LastAction.None
 
-    let isNumber(line:string) = 
+    let isNumber(line:string, lineInt, char) = 
         let mutable result = Numbers.Integer(line)
         for ch in line do
             let isNumber = Char.IsNumber(ch)
@@ -96,37 +96,41 @@ module LexicalModule =
         match result with 
         | Numbers.None -> Tokens.None
         | Numbers.Error _ -> Tokens.None
-        | _ -> Tokens.Constant(result)
+        | _ -> Tokens.Constant(result, lineInt, char - 1)
 
-    let checkNumber(buffer:StringBuilder, tokenList:List<Tokens>, str:String) =
-        let number = isNumber(str)
+    let checkNumber(buffer:StringBuilder, tokenList:List<Tokens>, str:String, line, char) =
+        let number = isNumber(str, line, char)
         match number with
         | Tokens.Constant _ -> addAndReset(buffer, tokenList, number)
         | Tokens.None -> LastAction.None
         | _ -> LastAction.None
 
-    let checkFullOperator(buffer:StringBuilder, tokenList:List<Tokens>, i:byref<int>, text:ReadOnlySpan<char>) =
+    let checkFullOperator(buffer:StringBuilder, tokenList:List<Tokens>, i:byref<int>, text:ReadOnlySpan<char>, line, char:byref<int>) =
         let shouldCheck = false
-        let operator = checkOperator(buffer, tokenList, buffer.ToString(), shouldCheck)
+        let operator = checkOperator(buffer, tokenList, buffer.ToString(), shouldCheck, line, char)
         if(operator = LastAction.Again) then
-            let shouldAppend = isPunctuation(text.[i+1].ToString())
+            let str = text.[i+1].ToString()
+            let shouldAppend = isPunctuation str line char
             if(shouldAppend = Tokens.None) then
                 buffer.Append(text.[i+1]) |> ignore
                 i <- i + 1
-                checkOperator(buffer, tokenList, buffer.ToString(), not shouldCheck)
+                char <- char + 1
+                checkOperator(buffer, tokenList, buffer.ToString(), not shouldCheck, line, char)
             else 
-                checkOperator(buffer, tokenList, buffer.ToString(), not shouldCheck)
+                checkOperator(buffer, tokenList, buffer.ToString(), not shouldCheck, line, char)
         else
             operator
 
-    let getFullStr(buffer:StringBuilder, i:byref<int>, text:ReadOnlySpan<char>, charPtr:byref<int>) = 
-        let mutable punctuation = isPunctuation(text.[i].ToString())
+    let getFullStr(buffer:StringBuilder, i:byref<int>, text:ReadOnlySpan<char>, charPtr:byref<int>, line) = 
+        let mutable str = text.[i].ToString()
+        let mutable punctuation = isPunctuation str line charPtr
         buffer.Clear() |> ignore
         while ((punctuation = Tokens.None) && (i < text.Length - 1)) do
             buffer.Append(text.[i]) |> ignore
             i <- i + 1
             charPtr <- charPtr + 1
-            punctuation <- isPunctuation(text.[i].ToString())
+            str <- text.[i].ToString()
+            punctuation <- isPunctuation str line charPtr
 
         buffer.ToString()
 
@@ -140,16 +144,16 @@ module LexicalModule =
         let mutable currentCharPtr = 1
         while i < text.Length - 1 do
             buffer.Append(text.[i]) |> ignore
-            let punctuation = checkPunctuation(buffer, tokenList, buffer.ToString())
+            let punctuation = checkPunctuation(buffer, tokenList, buffer.ToString(), currentLinePtr, currentCharPtr)
             if(punctuation <> LastAction.Added) then
-                let result = checkFullOperator(buffer, tokenList, &i, text)
+                let result = checkFullOperator(buffer, tokenList, &i, text, currentLinePtr, &currentCharPtr)
                 if(result <> LastAction.Added) then
-                    let id = getFullStr(buffer, &i, text, &currentCharPtr)
-                    let keyword = checkKeyword(buffer, tokenList, id)
+                    let id = getFullStr(buffer, &i, text, &currentCharPtr, currentLinePtr)
+                    let keyword = checkKeyword(buffer, tokenList, id, currentLinePtr, currentCharPtr)
                     if(keyword <> LastAction.Added) then
-                        let isNum = checkNumber(buffer, tokenList, id)
+                        let isNum = checkNumber(buffer, tokenList, id, currentLinePtr, currentCharPtr)
                         if(isNum <> LastAction.Added) then
-                            let isId = checkIdentier(buffer, tokenList, id)
+                            let isId = checkIdentier(buffer, tokenList, id, currentLinePtr, currentCharPtr)
                             if isId = LastAction.None then
                                 buildError(buffer, tokenList, id, currentLinePtr, currentCharPtr) 
                                 |> ignore
@@ -184,7 +188,7 @@ module LexicalModule =
     let whiteSpace = [ " "; "\n"; "\t" ]
     let isWhiteSpace(token:Tokens) =
         match token with 
-        | Tokens.Punctuation str -> whiteSpace.Contains(str)
+        | Tokens.Punctuation (str,_,_) -> whiteSpace.Contains(str)
         | _ -> false
 
     let removeWhiteTokens(tokens:List<Tokens>) = 
@@ -201,4 +205,9 @@ module LexicalModule =
 
         printErrors tokenList
 
-        (tokenList |> removeWhiteTokens, tokenList |> extractIdentifiers)
+        let symbolsTable = 
+            tokenList 
+            |> extractIdentifiers
+            |> Seq.map(fun x-> { Type = DataTypes.None; Token = x; IdType = IdTypes.None })
+
+        (tokenList |> removeWhiteTokens, symbolsTable)

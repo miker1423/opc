@@ -30,11 +30,11 @@ module Types =
         | None
 
     type Tokens = 
-        | Keyword of string * DataTypes
-        | Operator of Operators
-        | Identifier of string
-        | Punctuation of string
-        | Constant of Numbers
+        | Keyword of string * DataTypes * int * int
+        | Operator of Operators * int * int
+        | Identifier of string * int * int
+        | Punctuation of string * int * int
+        | Constant of Numbers * int * int
         | Error of string * int * int
         | None
     

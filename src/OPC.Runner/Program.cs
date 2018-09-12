@@ -19,6 +19,12 @@ namespace OPC.Runner
 
             var tokens = getTokens(newText);
 
+            Console.WriteLine("Symbols");
+            foreach (var symbol in tokens.Item2)
+            {
+                Console.WriteLine(symbol);
+            }
+
             var list = ListModule.OfSeq(tokens.Item1);
 
             var syntaxResult = SyntaxAnalyze(list);
