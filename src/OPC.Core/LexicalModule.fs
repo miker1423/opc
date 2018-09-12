@@ -30,9 +30,10 @@ module LexicalModule =
 
     let isKeyword str = 
         match str with 
-        | "mientras" | "regresa" | "si"  -> Tokens.Keyword(str, DataTypes.None)
+        | "mientras"  | "si"  -> Tokens.Keyword(str, DataTypes.None)
         | "verdadero" | "falso" -> Tokens.Keyword(str, DataTypes.LogicConstant)
         | "principal" -> Tokens.Keyword(str, DataTypes.Main)
+        | "regresa" -> Tokens.Keyword(str, DataTypes.Return)
         | "logico"  -> Tokens.Keyword(str, DataTypes.Logic)
         | "entero" -> Tokens.Keyword(str, DataTypes.Integer)
         | "real" -> Tokens.Keyword(str, DataTypes.Real)

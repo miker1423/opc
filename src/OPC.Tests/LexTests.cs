@@ -149,10 +149,10 @@ namespace OPC.Tests
         [Fact]
         public void TestFullLine()
         {
-            var str = "entero a;".AsSpan();
+            var str = "entero a; ".AsSpan();
             var tokens = getTokens(str);
 
-            Assert.True(tokens.Count == 3);
+            Assert.True(tokens.Item1.Count == 3);
         }
 
         [Fact]
@@ -161,7 +161,7 @@ namespace OPC.Tests
             var str = "=== ".AsSpan();
             var tokens = getTokens(str);
 
-            Assert.True(tokens.Count == 2);
+            Assert.True(tokens.Item1.Count == 2);
         }
 
         [Fact]
@@ -170,7 +170,7 @@ namespace OPC.Tests
             var str = "===== ".AsSpan();
             var tokens = getTokens(str);
 
-            Assert.True(tokens.Count == 3);
+            Assert.True(tokens.Item1.Count == 3);
         }
     }
 }

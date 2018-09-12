@@ -25,6 +25,7 @@ module Types =
         | Real
         | Logic
         | Main
+        | Return
         | LogicConstant
         | None
 
