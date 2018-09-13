@@ -155,7 +155,7 @@ module LexicalModule =
                         if(isNum <> LastAction.Added) then
                             let isId = checkIdentier(buffer, tokenList, id, currentLinePtr, currentCharPtr)
                             if isId = LastAction.None then
-                                buildError(buffer, tokenList, id, currentLinePtr, currentCharPtr) 
+                                buildError(buffer, tokenList, id, currentLinePtr, currentCharPtr - buffer.Length) 
                                 |> ignore
                 else 
                     i <- i + 1
@@ -181,7 +181,7 @@ module LexicalModule =
     let printErrors(tokens:List<Tokens>) = 
         for token in tokens do
             match token with
-            | Tokens.Error (id, line, _) -> printfn "Error at line %i, id %A" line id
+            | Tokens.Error (id, line, char) -> printfn "Error at line %i, char %i, id %A" line char id
             | _ -> ()
 
 
