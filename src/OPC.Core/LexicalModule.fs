@@ -69,10 +69,11 @@ module LexicalModule =
         | _ -> LastAction.None
 
     let isIdentifier(line:string, lineInt, char) =
-        if Char.IsNumber(line.[0]) || Char.IsSymbol(line.[0]) then Tokens.Error(line, 0, 0)
+        if Char.IsNumber(line.[0]) || Char.IsSymbol(line.[0]) || Char.IsPunctuation(line.[0])
+        then Tokens.Error(line, 0, 0)
         else 
-            let count = line |> Seq.filter(fun x -> Char.IsSymbol(x))
-            if count.Count() = 0 then
+            let count = line.Count(fun x -> Char.IsLetter(x) || Char.IsNumber(x))
+            if count = line.Length then
                 Tokens.Identifier(line, lineInt, char - line.Length - 1)
             else Tokens.Error(line, 0, 0)
 
