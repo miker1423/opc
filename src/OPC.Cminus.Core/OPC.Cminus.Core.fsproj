@@ -5,8 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Types.fs" />
-    <Compile Include="LexicalModule.fs" />
+	  <Compile Include="Types.fs" />
+	  <Compile Include="SyntaxModule.fs" />
+	<Compile Include="LexicalModule.fs" />
   </ItemGroup>
 
 </Project>

@@ -40,7 +40,7 @@ module LexicalModule =
 
     let rec processStringRec lexems list = 
         match lexems with
-        | [lexem] -> (list @ [getToken lexem])
+        | [lexem] -> list @ [getToken lexem]
         | head::tail -> processStringRec tail (list @ [getToken head])
         | [] -> list
 

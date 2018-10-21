@@ -1,11 +1,11 @@
 using System;
 using Xunit;
 using Microsoft.FSharp.Collections;
-
-using OPC.Cminus.Core;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
+
+using OPC.Cminus.Core;
 
 namespace OPC.Cminus.Tests
 {
